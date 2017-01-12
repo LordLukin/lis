@@ -19,5 +19,6 @@ if __name__ == '__main__':
     [size, horizontal_data, vertical_data] = read_input('input.txt')
     board = Board(size, horizontal_data, vertical_data)
     board.print_board()
-    board.mark_horizontal_intersections()
+    board.mark_intersections(Direction.HORIZONTAL)
+    board.mark_intersections(Direction.VERTICAL)
     board.print_board()

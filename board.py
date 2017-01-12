@@ -1,3 +1,11 @@
+from enum import Enum
+
+
+class Direction(Enum):
+    HORIZONTAL = 0
+    VERTICAL = 1
+
+
 class Board(object):
 
     UNKNOWN = u"\u2591"
@@ -13,6 +21,9 @@ class Board(object):
         for i in range(self.size_v):
             self.board.append([self.UNKNOWN] * self.size_h)
 
+    def column(self, i):
+        return [row[i] for row in self.board]
+
     def print_board(self):
         print('-' * self.size_h)
         for row in self.board:
@@ -20,7 +31,7 @@ class Board(object):
                 print(item, end='')
             print('')
 
-    def __fill_row_forward(self, row):
+    def __fill_forward(self, row):
         internal_row = [self.UNKNOWN] * self.size_h
         index = 0
         for value, number in enumerate(row):
@@ -31,7 +42,7 @@ class Board(object):
             index += number + 1
         return internal_row
 
-    def __fill_row_backward(self, row):
+    def __fill_backward(self, row):
         internal_row = [self.UNKNOWN] * self.size_h
         max_val = len(row) - 1
         index = self.size_h - 1
@@ -43,23 +54,44 @@ class Board(object):
             index -= x + 2
         return internal_row
 
-    def mark_horizontal_intersections(self):
-        for i, row in enumerate(self.horizontal_data):
+    def mark_intersections(self, direction):
+        if direction == Direction.HORIZONTAL:
+            data = self.horizontal_data
+            size = self.size_h
+        else:
+            data = self.vertical_data
+            size = self.size_v
+
+        for i, row in enumerate(data):
             if not row:
                 raise LookupError("Row cannot be empty")
             row_size = sum(row) + len(row) - 1
-            if row_size == self.size_h:
-                self.board[i] = self.full_row_match(row)
+            if row_size == size:
+                # self.board[i] = self.full_row_match(row)
+                row_forward = self.__fill_forward(row)
+                row_backward = self.__fill_backward(row)
+                for index in range(size):
+                    if row_forward[index] == self.WHITE:
+                        if direction == Direction.HORIZONTAL:
+                            self.board[i][index] = self.WHITE
+                        else:
+                            self.board[index][i] = self.WHITE
+                    elif row_forward[index] == row_backward[index]:
+                        if direction == Direction.HORIZONTAL:
+                            self.board[i][index] = self.BLACK
+                        else:
+                            self.board[index][i] = self.BLACK
             else:
-                row_forward = self.__fill_row_forward(row)
-                row_backward = self.__fill_row_backward(row)
-                print(row_forward)
-                print(row_backward)
-                for index in range(self.size_h):
+                row_forward = self.__fill_forward(row)
+                row_backward = self.__fill_backward(row)
+                for index in range(size):
                     if row_forward[index] == self.UNKNOWN or row_forward[index] == self.WHITE:
                         continue
                     if row_forward[index] == row_backward[index]:
-                        self.board[i][index] = self.BLACK
+                        if direction == Direction.HORIZONTAL:
+                            self.board[i][index] = self.BLACK
+                        else:
+                            self.board[index][i] = self.BLACK
 
     def full_row_match(self, row):
         output_row = []
