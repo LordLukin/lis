@@ -13,14 +13,6 @@ class Board1x1Test(TestCase):
         cut.mark_intersections(Direction.HORIZONTAL)
         self.assertEqual(cut.board[0][0], cut.BLACK)
 
-    def test_1x1_white(self):
-        horizontal_data = [[]]
-        vertical_data = [[]]
-        cut = Board(self.size, horizontal_data, vertical_data)
-
-        with self.assertRaises(LookupError):
-            cut.mark_intersections(Direction.HORIZONTAL)
-
 
 class Board2x2Test(TestCase):
     size = [2, 2]
