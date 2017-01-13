@@ -34,13 +34,16 @@ class Board(object):
     def solve(self):
         self.mark_intersections(Direction.HORIZONTAL)
         self.mark_intersections(Direction.VERTICAL)
-        # self.extend_border_markers()
+        self.extend_border_markers(Direction.HORIZONTAL)
+        self.extend_border_markers(Direction.VERTICAL)
         self.mark_unreachable_fields(Direction.HORIZONTAL)
         self.mark_unreachable_fields(Direction.VERTICAL)
+        self.fill_white_when_complete(Direction.HORIZONTAL)
+        self.fill_white_when_complete(Direction.VERTICAL)
 
     def print_board(self):
         unknown = u"\u2591"  # * 2
-        black = u"\u2588" * 2
+        black = u"\u2588"  # * 2
         white = u" "  # * 2
 
         print('+', end='')
@@ -49,7 +52,6 @@ class Board(object):
         for row in self.board:
             print('|', end='')
             for item in row:
-                print(item, end='') # debug print
                 if item == self.WHITE:
                     print(white, end='')
                 elif item == self.UNKNOWN:
@@ -77,6 +79,7 @@ class Board(object):
         max_val = len(row) - 1
         index = self.size_h - 1
         for value, number in enumerate(reversed(row)):
+            x = 0
             for x in range(number):
                 internal_row[index - x] = max_val - value
                 if index - x - 1 > 0:
@@ -116,6 +119,47 @@ class Board(object):
         if direction == Direction.VERTICAL:
             self.board = np.transpose(self.board)
 
+    def extend_border_markers(self, direction):
+        if direction == Direction.VERTICAL:
+            data = self.horizontal_data  # yes, another dimension
+            size = self.size_h
+            self.board = np.transpose(self.board)
+        else:
+            data = self.vertical_data  # yes, another dimension
+            size = self.size_v
+
+        self.__mark_beginings(data)
+        self.__mark_endings(data, size)
+
+        if direction == Direction.VERTICAL:
+            self.board = np.transpose(self.board)
+
+    def __mark_beginings(self, data):
+        for i, row in enumerate(data):
+            first = row[0]
+            markedFromEdge = self.board[0][i] == self.BLACK
+            marked = False
+            for j in range(first):
+                if marked:
+                    self.board[j][i] = self.BLACK
+                if self.board[j][i] == self.BLACK:
+                    marked = True
+            if markedFromEdge:
+                self.board[j+1][i] = self.WHITE
+
+    def __mark_endings(self, data, size):
+        for i, row in enumerate(data):
+            last = row[-1]
+            markedFromEdge = self.board[-1][i] == self.BLACK
+            marked = False
+            for j in reversed(range(size - last, size)):
+                if marked:
+                    self.board[j][i] = self.BLACK
+                if self.board[j][i] == self.BLACK:
+                    marked = True
+            if markedFromEdge:
+                self.board[j-1][i] = self.WHITE
+
     def mark_unreachable_fields(self, direction):
         if direction == Direction.VERTICAL:
             data = self.vertical_data
@@ -137,7 +181,7 @@ class Board(object):
                     if first < self.size_h:
                         for j in range(first, size):
                             self.board[i][j] = self.WHITE
-                    print(i, index, index + diff + 1)
+                    # print(i, index, index + diff + 1)
                     for index in range(size):
                         if self.board[i][index] == self.BLACK:
                             break
@@ -148,3 +192,37 @@ class Board(object):
 
         if direction == Direction.VERTICAL:
             self.board = np.transpose(self.board)
+
+    def fill_white_when_complete(self, direction):
+        if direction == Direction.VERTICAL:
+            data = self.vertical_data
+            size = self.size_v
+            self.board = np.transpose(self.board)
+        else:
+            data = self.horizontal_data
+            size = self.size_h
+
+        for i, row in enumerate(data):
+            if self.__check_if_complete_row(row, self.board[i]):
+                for j in range(size):
+                    if self.board[i][j] == self.UNKNOWN:
+                        self.board[i][j] = self.WHITE
+
+        if direction == Direction.VERTICAL:
+            self.board = np.transpose(self.board)
+
+    def __check_if_complete_row(self, row, board_row):
+        # think about marking row as complete and not take it for further computations
+        filled = 0
+        index = 0
+        last = len(row)
+        for item in board_row:
+            if item == self.BLACK:
+                filled += 1
+            if item == self.WHITE or item == self.UNKNOWN:
+                if filled != 0 and filled != row[index]:
+                    return False
+                elif filled != 0 and filled == row[index]:
+                    index += 1
+                    if index == last:
+                        return True
